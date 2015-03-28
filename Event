@@ -1,0 +1,90 @@
+//============================================================================
+// Name        : cpp.cpp
+// Author      : 
+// Version     :
+// Copyright   : Your copyright notice
+// Description : Hello World in C++, Ansi-style
+//============================================================================
+#include "test1.h"
+#include <pthread.h>
+#include <stdlib.h>
+#include <vector>
+#include<stdio.h>
+#include<string.h>
+
+using namespace std;
+
+class event
+{
+public:
+	event(int count)
+{
+		_count = count;
+		_states = (volatile bool*) malloc(_count * sizeof(volatile bool));
+		pthread_mutex_init(&_mutex, NULL);
+		pthread_cond_init(&_cond, NULL);
+
+}
+	void setEvent(int index)
+	{
+		//int ind = (int)*index;
+		pthread_mutex_lock(&_mutex);
+		_states[index] = true;
+		pthread_cond_broadcast(&_cond);
+		pthread_mutex_unlock(&_mutex);
+
+	}
+	void ResetEvent(int index)
+	{
+		pthread_mutex_lock(&_mutex);
+
+		_states[index] = false;
+		pthread_cond_broadcast(&_cond);
+		pthread_mutex_unlock(&_mutex);
+
+	}
+	void waitForAny()
+	{
+		while (true)
+		{
+			for (int i = 0; i < _count; i++)
+			{
+				if (_states[i] == true)
+				{
+					cout << i << " Event Setted" <<endl;
+				}
+			}
+		}
+
+	}
+
+protected:
+	pthread_mutex_t _mutex;
+	pthread_cond_t _cond;
+	volatile bool* _states;
+	vector<int> arr;
+	int _count;
+};
+
+
+void* Set(void * arg)
+{
+	volatile int *i = (int *)arg;
+	cout << "Set" << *i << endl;
+	fflush( stdout );
+	return NULL;
+}
+
+int main()
+{
+	event eve(5);
+	pthread_t pid[5];
+	//eve.waitForAny();
+
+	for(int i = 0; i<=1; i++)
+	pthread_create(&pid[i],NULL,&Set,&i);
+
+	for(int j = 0; j<=1; j++)
+	pthread_join(pid[j],NULL);
+	return 0;
+}
